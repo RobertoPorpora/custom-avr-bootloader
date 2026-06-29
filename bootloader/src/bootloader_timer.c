@@ -43,5 +43,7 @@ void BT_timer_start(BT_time_ms_t *timer)
 
 bool BT_timer_expired(BT_time_ms_t *timer, BT_time_ms_t timeout)
 {
-    return system_timer - *timer >= timeout;
+    // Cast a 16-bit: forza la sottrazione modulare (wraparound a 65536 ms),
+    // corretta per qualsiasi intervallo < 65536 ms (il timeout e' 60000 ms).
+    return (BT_time_ms_t)(system_timer - *timer) >= timeout;
 }

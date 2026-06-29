@@ -3,7 +3,7 @@
 #include "command_processor.h"
 #include "process_functions.h"
 #include "bootloader_globals.h"
-#include "Criptography.h"
+#include "criptography.h"
 #include "bootloader_timer.h"
 
 static CP_status_t ok_response(message_s *message)
@@ -37,17 +37,20 @@ CP_status_t PF_application_enable(message_s *message)
 
 CP_status_t PF_write_memory_page(message_s *message)
 {
-    CRI_decrypt(message->payload, message->payload_length);
-
+    // L'indirizzo (primi 2 byte del payload) viaggia in CHIARO e fa da nonce CTR.
     uint16_t page_address = message->payload[0];
     page_address <<= 8;
     page_address += message->payload[1];
 
-    // prepare answer that contains FLASH address in any case
+    // Decifra SOLO i dati di pagina (dal byte 2 in poi), nonce = indirizzo.
+    CRI_crypt(message->payload + FLASH_ADDRESS_SIZE,
+              message->payload_length - FLASH_ADDRESS_SIZE,
+              page_address);
+
+    // Risposta: eco dell'indirizzo, in chiaro (e' un dato pubblico, non va cifrato).
     message->answer_payload_length = 2;
     message->answer_payload[0] = page_address >> 8;
     message->answer_payload[1] = page_address >> 0;
-    CRI_encrypt(message->answer_payload, message->answer_payload_length);
 
     if (0 != (page_address % FLASH_PAGE_SIZE))
     {
