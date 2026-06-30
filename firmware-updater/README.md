@@ -1,41 +1,50 @@
-# Firmware updater
+# 🖥️ Firmware updater
 
-## Requirements
+> A small **PyWebView** desktop app that guides a user through updating a board running the custom AVR bootloader.
 
-- The user can update a board equipped with a custom AVR bootloader.
-- The user must have:
-  - A USB connection (virtual serial port) to the board.
-  - An encrypted .fw file.
-- The user and the software must not be able to decrypt the contents of the .fw file.
-- The procedure must be strict and guided to limit variability and errors.
-- Basic logging to diagnose any issues afterward.
-- The ability to distinguish 2 or more connected boards.
+---
 
-## Detailed design
+## 🎯 Requirements
 
-- The software has a frontend and a backend, built with the PyWebView system.
-- The frontend manages the steps the user must follow:
-  1. Load a .fw file.
-  2. Select a serial port.
-  3. Firmware update with a progress bar.
-  4. Start the application or report any errors.
-- The backend handles communication with the board over USB.
-- Backend and frontend communicate through a text protocol:
-  - message type
-  - message content
+- 👤 The user can update a board equipped with the custom AVR bootloader.
+- 🔌 The user must have a USB connection (virtual serial port) to the board.
+- 📦 The user must have an encrypted `.fw` file.
+- 🔒 Neither the user nor the software can decrypt the contents of the `.fw` file.
+- 🧭 The procedure is strict and guided, to limit variability and errors.
+- 📝 Basic logging, to diagnose issues afterwards.
+- 🔢 Ability to distinguish 2 or more connected boards.
 
-### Protocol
+---
 
-> F = Frontend  
-> B = Backend  
+## 🏗️ Detailed design
 
-Messages:
-- F -> B: Load file.
-  - B -> F: Response with the file path.
-- F -> B: Request COM port list.
-  - B -> F: Response with the COM port list.
-- F -> B: Request to start an update (file, port).
-  - B -> F: Acknowledgement of receipt.
-- B -> F: Update status:
-  - in progress (% complete)
-  - finished (possible errors)
+The software has a **frontend** and a **backend**, built with PyWebView.
+
+**Frontend** — guides the user through the steps:
+1. 📂 Load a `.fw` file.
+2. 🔌 Select a serial port.
+3. 📊 Run the firmware update (progress bar).
+4. 🚀 Start the application, or report errors.
+
+**Backend** — handles USB communication with the board.
+
+### 🔁 Frontend ↔ Backend protocol
+
+> 🟦 **F** = Frontend · 🟩 **B** = Backend
+
+| Direction | Message |
+|-----------|---------|
+| F → B | Load file → *B replies with the file path* |
+| F → B | Request COM port list → *B replies with the list* |
+| F → B | Start update (file, port) → *B acknowledges* |
+| B → F | Update status: in progress (% complete) / finished (possible errors) |
+
+---
+
+## 🔐 Note on encryption
+
+The `.fw` file is encrypted with **Speck 32/64 in CTR mode** (the toolchain and the
+bootloader share the same secret key). The updater only relays the already-encrypted
+pages to the board, so neither the user nor this GUI needs — or is able — to decrypt
+the firmware contents.
+👉 See [`../bootloader/src/criptography.md`](../bootloader/src/criptography.md).

@@ -21,7 +21,9 @@ def read_numbers_from_h_file(file_path):
     return result
 
 PASSWORD_H_PATH = os.path.join(BOOTLOADER, 'src', 'Password.h')
-PASSWORD = read_numbers_from_h_file(PASSWORD_H_PATH)
+# Chiave Speck 32/64: 4 parole da 16 bit, riletta dallo stesso header del firmware
+# cosi' i due lati restano sempre allineati. Ordine: [k0, l0, l1, l2].
+SPECK_KEY = read_numbers_from_h_file(PASSWORD_H_PATH)
 
 POLYNOMIAL_H_PATH = os.path.join(BOOTLOADER, 'src', 'Polynomial.h')
 POLYNOMIAL = read_numbers_from_h_file(POLYNOMIAL_H_PATH)
@@ -178,17 +180,70 @@ def crc8(buffer: list[int]) -> int:
                 crc ^= POLYNOMIAL[0]
     return crc
 
+# ------------------------------------------------------------------------------
+# Cifratura Speck 32/64 in modalita' CTR (gemella di bootloader/src/criptography.c).
+# In CTR cifrare e decifrare sono la stessa operazione (XOR col keystream).
+#
+# Convenzione di payload condivisa col firmware:
+#   - i primi 2 byte sono l'INDIRIZZO di pagina, viaggiano in CHIARO e fanno da
+#     nonce; non vengono cifrati;
+#   - dal 3o byte in poi ci sono i dati, cifrati in CTR con nonce = indirizzo.
+# Payload di <= 2 byte (es. eco dell'indirizzo nelle risposte) non viene toccato.
+
+SPECK_ROUNDS = 22
+_ALPHA = 7
+_BETA = 2
+
+def _rotr16(x: int, r: int) -> int:
+    return ((x >> r) | (x << (16 - r))) & 0xFFFF
+
+def _rotl16(x: int, r: int) -> int:
+    return ((x << r) | (x >> (16 - r))) & 0xFFFF
+
+def _speck_key_schedule() -> list[int]:
+    k = SPECK_KEY[0]
+    l = [SPECK_KEY[1], SPECK_KEY[2], SPECK_KEY[3]]
+    rk = [k]
+    for i in range(SPECK_ROUNDS - 1):
+        li = l[i % 3]
+        li = ((_rotr16(li, _ALPHA) + k) & 0xFFFF) ^ i
+        k = _rotl16(k, _BETA) ^ li
+        l[i % 3] = li
+        rk.append(k)
+    return rk
+
+def _speck_encrypt_block(rk: list[int], x: int, y: int) -> tuple[int, int]:
+    for i in range(SPECK_ROUNDS):
+        x = ((_rotr16(x, _ALPHA) + y) & 0xFFFF) ^ rk[i]
+        y = _rotl16(y, _BETA) ^ x
+    return x, y
+
+def _ctr(data: list[int], nonce: int) -> list[int]:
+    rk = _speck_key_schedule()
+    out = []
+    counter = 0
+    i = 0
+    while i < len(data):
+        x, y = _speck_encrypt_block(rk, nonce, counter)
+        counter += 1
+        ks = [(x >> 8) & 0xFF, x & 0xFF, (y >> 8) & 0xFF, y & 0xFF]
+        for b in range(4):
+            if i >= len(data):
+                break
+            out.append(data[i] ^ ks[b])
+            i += 1
+    return out
+
 def encrypt(payload: list[int]) -> list[int]:
-    return xor_cypher(payload)
+    payload = list(payload)
+    if len(payload) <= 2:
+        return payload
+    nonce = (payload[0] << 8) | payload[1]
+    return payload[:2] + _ctr(payload[2:], nonce)
 
 def decrypt(payload: list[int]) -> list[int]:
-    return xor_cypher(payload)
-
-def xor_cypher(payload: list[int]) -> list[int]:
-    encrypted_payload = []
-    for i in range(len(payload)):
-        encrypted_payload.append((payload[i] ^ PASSWORD[i % len(PASSWORD)]) & 0xFF)
-    return encrypted_payload
+    # CTR: identica alla cifratura.
+    return encrypt(payload)
 
 # ------------------------------------------------------------------------------
 

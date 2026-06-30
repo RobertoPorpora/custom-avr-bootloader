@@ -1,138 +1,123 @@
-# Custom AVR Bootloader Project
+# 🔌 Custom AVR Bootloader
 
-This repository contains a complete workflow for building, installing, and updating a custom bootloader for an ATmega32U4-based board (the same class of hardware as the Arduino Leonardo/Micro family).
+> A complete, end-to-end workflow to **build, install, and securely update** custom firmware on an ATmega32U4 board (Arduino Leonardo / Micro class).
 
-The project is split into three main parts:
-
-1. **Bootloader firmware** under `bootloader/`
-   - A LUFA-based USB bootloader for the ATmega32U4.
-   - Handles USB communication, command parsing, memory programming, and application launch.
-
-2. **Toolchain utilities** under `toolchain/`
-   - Python scripts to compile the bootloader and application, install the programmer, upload firmware, and manage COM port selection.
-   - Also includes the low-level protocol logic used to talk to the bootloader.
-
-3. **Firmware updater GUI** under `firmware-updater/`
-   - A small PyWebView-based desktop application that lets a user load an encrypted firmware file and update the device through the bootloader.
+![MCU](https://img.shields.io/badge/MCU-ATmega32U4-1f6feb)
+![Boot section](https://img.shields.io/badge/boot%20section-4%20KB-orange)
+![Cipher](https://img.shields.io/badge/cipher-Speck%2032%2F64--CTR-2ea44f)
+![USB](https://img.shields.io/badge/USB-CDC%20%C2%B7%20LUFA-8957e5)
+![Toolchain](https://img.shields.io/badge/toolchain-Python%203-3776ab)
 
 ---
 
-## What this project does
+## 📑 Table of contents
 
-The goal of this repository is to provide a practical, end-to-end custom firmware update path for an AVR board:
-
-- build a custom bootloader,
-- install it on the target device,
-- compile an application image,
-- package it for secure update,
-- and send it to the board through the bootloader protocol.
-
-The design includes:
-
-- USB bootloader support for ATmega32U4,
-- a simple command protocol between PC and bootloader,
-- encrypted firmware payload handling,
-- a small GUI for updating firmware from a desktop environment.
+- [✨ What this project does](#-what-this-project-does)
+- [🗂️ Project structure](#-project-structure)
+- [🔁 Main workflow](#-main-workflow)
+- [🧰 Requirements](#-requirements)
+- [⚙️ Using the toolchain](#-using-the-toolchain)
+- [🖥️ Firmware updater](#-firmware-updater)
+- [📝 Notes](#-notes)
 
 ---
 
-## Project structure
+## ✨ What this project does
 
-- `bootloader/`  
-  Source code and build files for the USB bootloader.
+The repository provides a practical, end-to-end custom firmware update path for an AVR board:
 
-- `application/`  
-  Example application sketch used as the user firmware.
+- 🏗️ build a custom bootloader,
+- 📥 install it on the target device,
+- 🧱 compile an application image,
+- 📦 package it for a secure update,
+- 🚀 and send it to the board through the bootloader protocol.
 
-- `toolchain/`  
-  Python automation scripts for building, installing, and flashing the bootloader/application.
+It is split into **three main parts**:
 
-- `firmware-updater/`  
-  GUI-based firmware updater application built with PyWebView.
-
-- `docs/`  
-  Notes and reference material for the protocol and implementation details.
-
----
-
-## Main workflow
-
-1. Compile the bootloader.
-2. Install the programmer support on the board.
-3. Flash the custom bootloader to the target device.
-4. Compile the application firmware.
-5. Convert the application into the firmware format expected by the bootloader.
-6. Use the updater tool to send the encrypted firmware image to the board.
-
-This makes the project useful both as a learning tool and as a starting point for custom AVR firmware update pipelines.
+| Part | Folder | Role |
+|------|--------|------|
+| 🔧 **Bootloader firmware** | `bootloader/` | LUFA-based USB bootloader for the ATmega32U4: USB communication, command parsing, memory programming, application launch. |
+| 🐍 **Toolchain** | `toolchain/` | Python scripts to compile, install the programmer, flash, package firmware, and pick the COM port — plus the low-level bootloader protocol. |
+| 🖥️ **Firmware updater GUI** | `firmware-updater/` | A small PyWebView desktop app to load an encrypted firmware file and update the device. |
 
 ---
 
-## Hardware and software requirements
+## 🗂️ Project structure
 
-### Hardware
+```
+custom-avr-bootloader/
+├── bootloader/        🔧 USB bootloader firmware (C + LUFA) and build files
+│   ├── src/              source + per-module docs (incl. criptography.md)
+│   └── docs/             analysis notes (memory/size study)
+├── application/       🧱 example application sketch (user firmware)
+├── toolchain/         🐍 Python automation: build, install, flash, package
+├── firmware-updater/  🖥️ PyWebView GUI updater
+└── notes/             📝 protocol notes, to-dos, reference material
+```
 
-- An ATmega32U4-based board (Leonardo/Micro class)
+---
+
+## 🔁 Main workflow
+
+1. 🔨 Compile the bootloader.
+2. 🔌 Install the programmer support on the board.
+3. ⬇️ Flash the custom bootloader to the target device.
+4. 🧱 Compile the application firmware.
+5. 📦 Convert the application into the firmware format expected by the bootloader.
+6. 🚀 Use the updater tool to send the encrypted firmware image to the board.
+
+Useful both as a learning tool and as a starting point for custom AVR firmware update pipelines.
+
+---
+
+## 🧰 Requirements
+
+**Hardware** 🛠️
+- An ATmega32U4-based board (Leonardo / Micro class)
 - USB connection for programming and update operations
-- A compatible AVR programmer/programming interface for initial bootloader installation
+- A compatible AVR programmer for the initial bootloader installation
 
-### Software
-
+**Software** 💾
 - Python 3
-- Arduino CLI (used for application compilation)
+- Arduino CLI (application compilation)
 - AVR-GCC / AVR toolchain
 - avrdude
-- PyWebView for the GUI updater
+- PyWebView (GUI updater)
 
 ---
 
-## How to use the toolchain
+## ⚙️ Using the toolchain
 
-The Python entry point under `toolchain/` is the main automation interface.
+The Python entry point under `toolchain/` is the main automation interface
+(`toolchain/main.py`). Typical operations:
 
-Typical operations include:
-
-- compile the bootloader,
-- compile the application,
-- select a COM port,
-- install the programmer,
-- install the bootloader,
-- load an application image,
-- read memory.
-
-The actual command entry point is the script:
-
-- `toolchain/main.py`
+- 🔨 compile the bootloader / application
+- 🔌 select a COM port
+- 📥 install the programmer / bootloader
+- 🚀 load an application image
+- 🔍 read memory
 
 ---
 
-## Firmware updater
+## 🖥️ Firmware updater
 
 The updater under `firmware-updater/` provides a desktop GUI that:
 
-- opens a firmware file,
-- lists available serial ports,
-- starts the update process,
-- and reports progress/status back to the user.
+- 📂 opens a firmware file,
+- 🔌 lists available serial ports,
+- ▶️ starts the update process,
+- 📊 reports progress/status back to the user.
 
 This is the user-facing update flow for the custom bootloader.
 
 ---
 
-## Notes
+## 📝 Notes
 
-- The firmware update path uses encrypted payload handling for memory writes.
-- The bootloader protocol is intentionally simple and designed for controlled firmware updates.
-- This repository is still a development project, so some parts may be incomplete or experimental depending on the current branch state.
+- 🔐 Memory-write payloads are encrypted with **Speck 32/64 in CTR mode** (per-page nonce). Encryption provides **confidentiality only, not authenticity** — a signature/MAC would be needed for a fully secure update path. See [`bootloader/src/criptography.md`](bootloader/src/criptography.md).
+- 🧩 The bootloader protocol is intentionally simple and designed for controlled firmware updates.
+- 🚧 This is still a development project — some parts may be incomplete or experimental depending on the current branch state.
 
 ---
 
-## Summary
-
-This repository combines:
-
-- custom AVR bootloader firmware,
-- a build and flashing toolchain,
-- and a GUI-based updater.
-
-Together, these pieces form a small but complete ecosystem for custom AVR firmware deployment.
+<sub>🔧 Custom AVR bootloader firmware · 🐍 build & flashing toolchain · 🖥️ GUI updater — a small but complete ecosystem for custom AVR firmware deployment.</sub>

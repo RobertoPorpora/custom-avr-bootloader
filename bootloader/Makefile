@@ -254,6 +254,7 @@ CFLAGS += -funsigned-char
 CFLAGS += -funsigned-bitfields
 CFLAGS += -ffunction-sections
 CFLAGS += -fno-inline-small-functions
+CFLAGS += -flto
 CFLAGS += -fpack-struct
 CFLAGS += -fshort-enums
 CFLAGS += -fno-strict-aliasing
@@ -366,6 +367,7 @@ LDFLAGS  = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += -Wl,--section-start=.text=$(BOOT_START)
 LDFLAGS += -Wl,--relax
 LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -flto -Os
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)

@@ -71,11 +71,7 @@ CP_status_t CMDP_main(void)
 
 static CP_status_t receive_message(message_s *message)
 {
-    if (NULL == message)
-    {
-        return CP_MISSING_MESSAGE_STRUCT;
-    }
-
+    // message e' sempre &message (mai NULL): nessun controllo necessario.
     message->start = receive();
 
     if ('[' == message->start || '{' == message->start)
@@ -116,11 +112,7 @@ static CP_status_t receive_message(message_s *message)
 
 static CP_status_t execute_command(message_s *message)
 {
-    if (NULL == message)
-    {
-        return CP_MISSING_MESSAGE_STRUCT;
-    }
-
+    // message e' sempre &message (mai NULL): nessun controllo necessario.
     switch (message->command)
     {
     case CP_BOOTLOADER_VERSION:
@@ -141,11 +133,7 @@ static CP_status_t execute_command(message_s *message)
 
 static CP_status_t give_response(message_s *message)
 {
-    if (NULL == message)
-    {
-        return CP_MISSING_MESSAGE_STRUCT;
-    }
-
+    // message e' sempre &message (mai NULL): nessun controllo necessario.
     if (message->answer_payload_length > MAX_PAYLOAD_LENGTH)
     {
         return CP_ANSWER_TOO_LONG;
@@ -170,7 +158,8 @@ static CP_status_t give_response(message_s *message)
 
 static void crc8_push(uint8_t *crc, uint8_t byte)
 {
-    static uint8_t feedback_bit;
+    // variabile locale (non static): evita un accesso in RAM inutile.
+    uint8_t feedback_bit;
 
     *crc ^= byte;
     for (uint8_t bit = 8; bit > 0; --bit)
