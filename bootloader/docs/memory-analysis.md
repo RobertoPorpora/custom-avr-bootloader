@@ -77,13 +77,33 @@ host-validatable C optimizations (no assembly, no USB changes).
 | **+ timer 32 → 16 bit** | **4088 B** | **8 free, BUILD OK** ✅ |
 
 **Result:** where only a very weak XOR barely fit, a real block cipher (Speck) now
-fits inside 4 KB. RAM `.data + .bss` dropped **308 → 174 B**. Margin is tight (8 B);
-for more headroom there remain low-risk options (shorter descriptor strings,
-~40–60 B) or — carefully — an **assembly** rewrite of the cipher (high gain, but not
-runtime-validatable without hardware/simulator).
+fits inside 4 KB, initially with a tight 8 B margin.
 
 > All figures: build with LTO enabled. **LTO and the 16-bit timer must be validated
 > on hardware** (timing and USB enumeration are expected unchanged, but untested).
+
+### 4.3 🏎️ Further optimization round (descriptors + assembly)
+
+A second pass recovered a large margin and sped up the toolchain:
+
+| Step | Program | Free of 4096 | Note |
+|------|--------:|-------------:|------|
+| Start of this round | 4088 B | 8 B | robust Speck fitting |
+| + shorter USB descriptor strings | 4058 B | 38 B | product 16→8, manufacturer 11→4 chars |
+| **+ Speck core in AVR assembly** (`speck.S`) | **3936 B** | **160 B** | cipher code ~408 → 160 B |
+
+RAM `.data + .bss` ended at **152 B**. The assembly `speck_keystream_block` is a
+1:1 port of the C version; it was **validated byte-for-byte in the `avr-gdb`
+simulator** against the C/Python reference and the official Speck32/64 test vector.
+
+> ⚠️ Simulator caveat: the binutils AVR `sim` does **not** run the `.data` copy
+> (crt0), so `const` arrays read as 0 unless (a) the compiler inlines them or (b)
+> you inject them into RAM before the code runs. Real hardware initializes `.data`
+> normally (the original bootloader already relied on this for its key).
+
+Python toolchain speed (no flash cost): `receive_bytes` now reads in bulk (one
+`read(n)` instead of one byte per loop), and the Speck round keys are cached
+(computed once, not per block).
 
 ## 5. 💡 LED reintegration (evaluated, not done)
 

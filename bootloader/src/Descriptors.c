@@ -191,27 +191,29 @@ const USB_Descriptor_String_t LanguageString =
  */
 const USB_Descriptor_String_t ProductString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(16), .Type = DTYPE_String},
+	// Nome prodotto accorciato a 8 caratteri per risparmiare flash (era 16).
+	.Header                 = {.Size = USB_STRING_LEN(8), .Type = DTYPE_String},
 
 	#if DEVICE_PID == 0x0036
-	.UnicodeString          = L"Arduino Leonardo" 
+	.UnicodeString          = L"Leonardo"
 	#elif DEVICE_PID == 0x0037
-	.UnicodeString			= L"Arduino Micro   "
+	.UnicodeString			= L"Micro   "
 	#elif DEVICE_PID == 0x003C
-	.UnicodeString			= L"Arduino Esplora "
+	.UnicodeString			= L"Esplora "
 	#else
-	.UnicodeString			= L"USB IO board    "
+	.UnicodeString			= L"Bootload"
 	#endif
 };
 
 const USB_Descriptor_String_t ManufNameString = 
 {
-	.Header					= {.Size = USB_STRING_LEN(11), .Type = DTYPE_String},
-	
+	// Nome produttore accorciato a 4 caratteri per risparmiare flash (era 11).
+	.Header					= {.Size = USB_STRING_LEN(4), .Type = DTYPE_String},
+
 	#if DEVICE_VID == 0x2341
-	.UnicodeString			= L"Arduino LLC"
+	.UnicodeString			= L"Ardu"
 	#else
-	.UnicodeString			= L"Unknown    "
+	.UnicodeString			= L"AVR "
 	#endif
 };
 

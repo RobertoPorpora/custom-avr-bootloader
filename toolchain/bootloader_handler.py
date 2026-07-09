@@ -128,13 +128,15 @@ def send(request: Request) -> None:
     serial_port.write(request.bufferize())
 
 def receive_bytes(length: int) -> list[int]:
-    data = []
+    # Lettura "bulk": una sola read() prende piu' byte in un colpo invece di
+    # uno alla volta -> molto piu' veloce sui payload lunghi (es. 130 byte).
+    data = bytearray()
     start = time.time()
-    while time.time() - start < 5.0:
-        data.extend(list(serial_port.read()))
-        if len(data) >= length:
-            return data
-    return data
+    while len(data) < length and time.time() - start < 5.0:
+        chunk = serial_port.read(length - len(data))
+        if chunk:
+            data.extend(chunk)
+    return list(data)
 
 def receive(decrypt_payload: bool) -> Response:
     global serial_port
@@ -218,8 +220,18 @@ def _speck_encrypt_block(rk: list[int], x: int, y: int) -> tuple[int, int]:
         y = _rotl16(y, _BETA) ^ x
     return x, y
 
+_RK_CACHE = None
+
+def _round_keys() -> list[int]:
+    # Le round key dipendono solo dalla chiave (fissa): le calcolo una volta sola
+    # e le riuso, invece di rifare il key schedule per ogni blocco.
+    global _RK_CACHE
+    if _RK_CACHE is None:
+        _RK_CACHE = _speck_key_schedule()
+    return _RK_CACHE
+
 def _ctr(data: list[int], nonce: int) -> list[int]:
-    rk = _speck_key_schedule()
+    rk = _round_keys()
     out = []
     counter = 0
     i = 0
