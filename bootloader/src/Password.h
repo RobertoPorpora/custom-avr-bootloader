@@ -12,6 +12,7 @@
  * - E' un segreto: cambiala con valori casuali tuoi e non pubblicarla.
  * - Ordine atteso dal key schedule Speck: { k0, l0, l1, l2 }.
  */
-static const uint16_t SPECK_KEY[4] = {0x7CE7, 0x9BBC, 0x70B9, 0x3D45};
+// Non 'static': il simbolo deve essere visibile anche a speck.S (assembly).
+const uint16_t SPECK_KEY[4] = {0x7CE7, 0x9BBC, 0x70B9, 0x3D45};
 
 #endif // PASSWORD_H

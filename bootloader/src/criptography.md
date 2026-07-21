@@ -48,16 +48,21 @@ The nonce is the **flash page address**:
 
 ---
 
-## 🧩 Main functions (`criptography.c`)
+## 🧩 Main functions
 
-- `rotr16_7(x)` / `rotl16_2(x)` — rotations specialized for Speck's constants and
-  written to emit little AVR code (`rotr 7 = rotl1(byte_swap(x))`).
-- `speck_keystream_block(out_x, out_y, nonce, counter)` — produces one keystream
-  block. The **key schedule is computed on the fly** inside the same encryption
-  loop (no `rk[22]` array, no second loop), using a **3-word shift-register**
-  instead of `l[i % 3]` (modulo is expensive on AVR).
-- `CRI_crypt(data, len, nonce)` — applies the keystream to `data[0..len)` in place.
-  Keystream byte order: `x_hi, x_lo, y_hi, y_lo` (must match the Python side).
+- `speck_keystream_block(out_x, out_y, nonce, counter)` — **implemented in AVR
+  assembly** (`speck.S`) to minimise flash. Produces one keystream block with the
+  **key schedule computed on the fly** inside the encryption loop (no `rk[22]`
+  array, no second loop), using a **3-word shift-register** instead of `l[i % 3]`.
+  Rotations use the byte-swap trick (`rotr 7 = rotl1(byte_swap(x))`). It reads the
+  key from the global `SPECK_KEY` (hence non-`static`). ~160 B of flash vs ~408 B
+  for the C version.
+- `CRI_crypt(data, len, nonce)` — in `criptography.c`; applies the keystream to
+  `data[0..len)` in place. Keystream byte order: `x_hi, x_lo, y_hi, y_lo` (must
+  match the Python side).
+
+> The assembly is validated byte-for-byte in the `avr-gdb` simulator against the
+> Python reference and the official Speck32/64 test vector.
 
 ---
 
